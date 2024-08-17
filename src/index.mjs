@@ -1,6 +1,43 @@
 import { PitchDetector } from "pitchy";
 import turnLightOnOrOff from "./ClientAPI.js";
 var globalVolume = 0;
+var maryHadALittleLamb = ["E", "C", "A", "E", "C", "A"]
+var globalNote = "";
+var globalIndex = 0;
+var lightIsOn = false;
+
+const brightnessMap = {
+  C: [10, 10, 30, 50, 70, 90, 100, 100, 100, 100],
+  D: [11, 11, 31, 52.8, 72.8, 92.8, 100, 100, 100, 100],
+  E: [13, 13, 33, 53, 75.7, 75.7, 95.7, 100, 100, 100, 100],
+  F: [14, 14, 34, 58.4, 78.4, 98.4, 100, 100, 100, 100],
+  G: [16, 16, 36, 61.2, 81.2, 91.2, 100, 100, 100, 100],
+  A: [18, 18, 38, 64, 84, 94, 100, 100, 100, 100],
+  B: [19, 19, 39, 66.8, 86.8, 96.8, 100, 100, 100, 100]
+}
+
+function checkForSong() {
+  if(globalIndex === maryHadALittleLamb.length) {
+    if(lightIsOn) {
+      turnLightOnOrOff(1, false, 0)
+      lightIsOn = false;
+    }
+    else {
+      turnLightOnOrOff(1, true, 99)
+      lightIsOn = true;
+    }
+    globalIndex = 0;
+  }
+  if(maryHadALittleLamb[globalIndex] === globalNote) {
+    globalIndex++
+    const noteDisplay = document.getElementById("next-note")
+    noteDisplay.innerHTML = maryHadALittleLamb[globalIndex]
+    if(maryHadALittleLamb[globalIndex] === undefined) {
+      noteDisplay.innerHTML = "Start Over! | " + maryHadALittleLamb[0]
+    }
+  }
+}
+
       function updatePitch(analyserNode, detector, input, sampleRate) {
         analyserNode.getFloatTimeDomainData(input);
         const [pitch, clarity] = detector.findPitch(input, sampleRate);
@@ -8,26 +45,15 @@ var globalVolume = 0;
         if(pitch > 0) {
           const note = getNoteFromFrequency(pitch);
           // console.log(`The note for ${pitch} Hz is ${note}`);
-          console.log("global", globalVolume)
-
-          const brightnessMap = {
-            C: [10, 10, 30, 50, 70, 90, 100, 100, 100, 100],
-            D: [11, 11, 31, 52.8, 72.8, 92.8, 100, 100, 100, 100],
-            E: [13, 13, 33, 53, 75.7, 75.7, 95.7, 100, 100, 100, 100],
-            F: [14, 14, 34, 58.4, 78.4, 98.4, 100, 100, 100, 100],
-            G: [16, 16, 36, 61.2, 81.2, 91.2, 100, 100, 100, 100],
-            A: [18, 18, 38, 64, 84, 94, 100, 100, 100, 100],
-            B: [19, 19, 39, 66.8, 86.8, 96.8, 100, 100, 100, 100]
-          }
 
           if(!note.includes("undefined")) {
             const letter = note[0];
+            globalNote = letter;
             const position = note[note.length - 1]
-            turnLightOnOrOff(1, true, brightnessMap[letter][Number(position)] + (globalVolume * 1.5))
+            // turnLightOnOrOff(1, true, brightnessMap[letter][Number(position)])
+            checkForSong()
           }
-
         }
-
 
         document.querySelector("#pitch").textContent = `${
           Math.round(pitch * 10) / 10
@@ -92,6 +118,7 @@ var globalVolume = 0;
       }
 
       document.addEventListener("DOMContentLoaded", () => {
+        turnLightOnOrOff(1, false, 0)
         const audioContext = new window.AudioContext();
         const analyserNode = audioContext.createAnalyser();
 
