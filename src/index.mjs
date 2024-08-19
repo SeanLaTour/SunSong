@@ -1,10 +1,18 @@
 import { PitchDetector } from "pitchy";
 import turnLightOnOrOff from "./ClientAPI.js";
 var globalVolume = 0;
-var maryHadALittleLamb = ["E", "C", "A", "E", "C", "A"]
+var melody = ["E4", "C4", "A4", "E4", "C4", "A4"]
+var isMusicArray = [];
 var globalNote = "";
 var globalIndex = 0;
 var lightIsOn = false;
+
+function resetGlobalIndex() {
+  // setInterval(() => {
+  //   console.log("reset")
+  //   globalIndex = 0;
+  // }, 15000);
+}
 
 const brightnessMap = {
   C: [10, 10, 30, 50, 70, 90, 100, 100, 100, 100],
@@ -16,8 +24,21 @@ const brightnessMap = {
   B: [19, 19, 39, 66.8, 86.8, 96.8, 100, 100, 100, 100]
 }
 
+function checkIsMusicArrayTooLong(letter) {
+  if(letter !== isMusicArray[isMusicArray.length - 1]) {
+    isMusicArray.push(letter)
+  }
+
+  if(isMusicArray.length > 8) {
+    isMusicArray.length = 0;
+    const noteDisplay = document.getElementById("next-note")
+    noteDisplay.innerHTML = melody[globalIndex]
+  }
+}
+
 function checkForSong() {
-  if(globalIndex === maryHadALittleLamb.length) {
+  // Turn lights on or off...
+  if(globalIndex === melody.length) {
     if(lightIsOn) {
       turnLightOnOrOff(1, false, 0)
       lightIsOn = false;
@@ -28,12 +49,14 @@ function checkForSong() {
     }
     globalIndex = 0;
   }
-  if(maryHadALittleLamb[globalIndex] === globalNote) {
+
+  if(melody[globalIndex] === globalNote) {
     globalIndex++
     const noteDisplay = document.getElementById("next-note")
-    noteDisplay.innerHTML = maryHadALittleLamb[globalIndex]
-    if(maryHadALittleLamb[globalIndex] === undefined) {
-      noteDisplay.innerHTML = "Start Over! | " + maryHadALittleLamb[0]
+    noteDisplay.innerHTML = melody[globalIndex]
+
+    if(melody[globalIndex] === undefined) {
+      noteDisplay.innerHTML = "Start Over! | " + melody[0]
     }
   }
 }
@@ -48,9 +71,11 @@ function checkForSong() {
 
           if(!note.includes("undefined")) {
             const letter = note[0];
-            globalNote = letter;
             const position = note[note.length - 1]
+            globalNote = letter + position;
             // turnLightOnOrOff(1, true, brightnessMap[letter][Number(position)])
+            checkIsMusicArrayTooLong(letter + position)
+
             checkForSong()
           }
         }
@@ -61,56 +86,58 @@ function checkForSong() {
         document.querySelector("#clarity").textContent = `${Math.round(
           clarity * 100
         )} %`;
-        setTimeout(() => {
-          const startAudio = async () => {
-            try {
-              // Get user media (microphone input)
-              const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
+        document.querySelector("#globalIndex-label").textContent = `${globalIndex} | ${melody[globalIndex]} %`;
+        document.querySelector("#isMusicArray-label").textContent = `${isMusicArray} %`;
+        // setTimeout(() => {
+        //   const startAudio = async () => {
+        //     try {
+        //       // Get user media (microphone input)
+        //       const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
               
-              // Create an AudioContext
-              const audioContext = new (window.AudioContext || window.webkitAudioContext)();
+        //       // Create an AudioContext
+        //       const audioContext = new (window.AudioContext || window.webkitAudioContext)();
               
-              // Create a MediaStreamAudioSourceNode
-              const source = audioContext.createMediaStreamSource(stream);
+        //       // Create a MediaStreamAudioSourceNode
+        //       const source = audioContext.createMediaStreamSource(stream);
               
-              // Create an AnalyserNode
-              const analyser = audioContext.createAnalyser();
-              analyser.fftSize = 256;
+        //       // Create an AnalyserNode
+        //       const analyser = audioContext.createAnalyser();
+        //       analyser.fftSize = 256;
               
-              // Connect the source to the analyser
-              source.connect(analyser);
+        //       // Connect the source to the analyser
+        //       source.connect(analyser);
               
-              // Create a buffer to hold the analyser data
-              const bufferLength = analyser.frequencyBinCount;
-              const dataArray = new Uint8Array(bufferLength);
+        //       // Create a buffer to hold the analyser data
+        //       const bufferLength = analyser.frequencyBinCount;
+        //       const dataArray = new Uint8Array(bufferLength);
               
-              // Function to calculate the volume
-              function calculateVolume() {
-                analyser.getByteTimeDomainData(dataArray);
+        //       // Function to calculate the volume
+        //       function calculateVolume() {
+        //         analyser.getByteTimeDomainData(dataArray);
                 
-                let sum = 0;
-                for (let i = 0; i < bufferLength; i++) {
-                  const value = dataArray[i] / 128.0 - 1.0; // Normalize the value
-                  sum += value * value;
-                }
+        //         let sum = 0;
+        //         for (let i = 0; i < bufferLength; i++) {
+        //           const value = dataArray[i] / 128.0 - 1.0; // Normalize the value
+        //           sum += value * value;
+        //         }
                 
-                const rms = Math.sqrt(sum / bufferLength);
-                const volume = rms * 100; // Scale to a more readable range
+        //         const rms = Math.sqrt(sum / bufferLength);
+        //         const volume = rms * 100; // Scale to a more readable range
                 
-                // console.log(`Volume: ${volume.toFixed(0)}`);
-                globalVolume = Math.ceil(volume)
+        //         // console.log(`Volume: ${volume.toFixed(0)}`);
+        //         globalVolume = Math.ceil(volume)
                 
-                requestAnimationFrame(calculateVolume);
-              }
+        //         requestAnimationFrame(calculateVolume);
+        //       }
               
-              // Start calculating volume
-              calculateVolume();
-            } catch (error) {
-              console.error('Error accessing microphone:', error);
-            }
-          }
-          startAudio()
-        }, 1000);
+        //       // Start calculating volume
+        //       calculateVolume();
+        //     } catch (error) {
+        //       console.error('Error accessing microphone:', error);
+        //     }
+        //   }
+        //   startAudio()
+        // }, 1000);
         window.setTimeout(
           () => updatePitch(analyserNode, detector, input, sampleRate),
           150
@@ -118,6 +145,7 @@ function checkForSong() {
       }
 
       document.addEventListener("DOMContentLoaded", () => {
+        resetGlobalIndex();
         turnLightOnOrOff(1, false, 0)
         const audioContext = new window.AudioContext();
         const analyserNode = audioContext.createAnalyser();
